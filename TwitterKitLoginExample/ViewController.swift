@@ -55,14 +55,24 @@ class ViewController: UIViewController {
         if let session = TWTRTwitter.sharedInstance().sessionStore.session() {
             label.text = session.userID
         } else {
-            TWTRTwitter.sharedInstance().logIn { (session, error) in
-                if let error = error {
-                    print(error)
-                }
-            }
+            let alert = UIAlertController(title: "Twitter連携", message: nil, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "する", style: .default, handler: { _ in
+                self.login()
+            }))
+            alert.addAction(UIAlertAction(title: "しない", style: .cancel, handler: nil))
+            self.present(alert, animated: true, completion: nil)
         }
     }
 
+    private func login() {
+        TWTRTwitter.sharedInstance().logIn { (session, error) in
+            if let error = error {
+                print(error)
+            } else if let session = session {
+                self.label.text = session.userID
+            }
+        }
+    }
     
     @objc private func logout() {
         guard let sessions = TWTRTwitter.sharedInstance().sessionStore.existingUserSessions() as? [TWTRSession] else {
@@ -72,5 +82,7 @@ class ViewController: UIViewController {
         for session in sessions {
             TWTRTwitter.sharedInstance().sessionStore.logOutUserID(session.userID)
         }
+        
+        label.text = ""
     }
 }
