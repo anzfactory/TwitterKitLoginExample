@@ -12,8 +12,21 @@ import TwitterKit
 
 class ViewController: UIViewController {
     
-    private let button: UIButton = UIButton(type: .system)
-    private let label: UILabel = UILabel(frame: .zero)
+    private let button: UIButton = {
+        
+        let button = UIButton(type: .system)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.setTitle("ログアウト", for: .normal)
+        return button
+    }()
+    private let label: UILabel = {
+        
+        let label = UILabel(frame: .zero)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.text = ""
+        label.font = .boldSystemFont(ofSize: 18.0)
+        return label
+    }()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -30,27 +43,30 @@ class ViewController: UIViewController {
         
         TWTRTwitter.sharedInstance().start(withConsumerKey: consumerKey, consumerSecret: consumerSecret)
         
-        label.translatesAutoresizingMaskIntoConstraints = false
-        label.text = ""
-        label.font = .boldSystemFont(ofSize: 18.0)
-        self.view.addSubview(label)
+        view.addSubview(label)
         NSLayoutConstraint.activate([
-            label.centerXAnchor.constraint(equalTo: self.view.centerXAnchor),
-            label.centerYAnchor.constraint(equalTo: self.view.centerYAnchor)
+            label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            label.centerYAnchor.constraint(equalTo: view.centerYAnchor)
         ])
         
-        button.translatesAutoresizingMaskIntoConstraints = false
-        button.setTitle("ログアウト", for: .normal)
-        button.addTarget(self, action: #selector(type(of: self).logout), for: .touchUpInside)
-        self.view.addSubview(button)
+        button.addTarget(self, action: #selector(type(of: self).tapLogout), for: .touchUpInside)
+        view.addSubview(button)
         NSLayoutConstraint.activate([
-            button.rightAnchor.constraint(equalTo: self.view.rightAnchor, constant: -16.0),
-            button.bottomAnchor.constraint(equalTo: self.view.bottomAnchor, constant: -16.0)
+            button.rightAnchor.constraint(equalTo: view.rightAnchor, constant: -16.0),
+            button.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -16.0)
         ])
     }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        
+        confirm()
+    }
+}
+
+extension ViewController {
+    
+    private func confirm() {
         
         if let session = TWTRTwitter.sharedInstance().sessionStore.session() {
             label.text = session.userID
@@ -60,29 +76,43 @@ class ViewController: UIViewController {
                 self.login()
             }))
             alert.addAction(UIAlertAction(title: "しない", style: .cancel, handler: nil))
-            self.present(alert, animated: true, completion: nil)
+            present(alert, animated: true, completion: nil)
         }
     }
-
+    
     private func login() {
+        
         TWTRTwitter.sharedInstance().logIn { (session, error) in
             if let error = error {
-                print(error)
+                print("\n----- Login Error!!! -----\n\(error)\n")
             } else if let session = session {
                 self.label.text = session.userID
             }
         }
     }
     
-    @objc private func logout() {
-        guard let sessions = TWTRTwitter.sharedInstance().sessionStore.existingUserSessions() as? [TWTRSession] else {
-            return
-        }
+    private func logout() {
         
-        for session in sessions {
+        if let session = TWTRTwitter.sharedInstance().sessionStore.session() {
             TWTRTwitter.sharedInstance().sessionStore.logOutUserID(session.userID)
         }
         
+        if let sessions = TWTRTwitter.sharedInstance().sessionStore.existingUserSessions() as? [TWTRSession] {
+            for session in sessions {
+                TWTRTwitter.sharedInstance().sessionStore.logOutUserID(session.userID)
+            }
+        }
+        
         label.text = ""
+        
+    }
+}
+
+@objc extension ViewController {
+    
+    private func tapLogout() {
+        
+        logout()
+        confirm()
     }
 }
